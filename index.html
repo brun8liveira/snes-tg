@@ -4,19 +4,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Top Gear</title>
 
-  <script>
-    EJS_player = "#game";
-    EJS_core = "snes";                          // Super Nintendo
-    EJS_threads = false;
-    EJS_disableDebug = true;
-    EJS_startOnLoaded = true;
-    EJS_gameUrl = "roms/tg.sfc";        // ajuste o nome da sua ROM
-    EJS_pathtodata = "https://cdn.emulatorjs.org/latest/data/";
-    EJS_startOnLoaded = true;
-    EJS_fullscreenOnLoaded = false;
-  </script>
-
-  <script src="https://cdn.emulatorjs.org/latest/data/loader.js"></script>
+<!-- PRELOAD (ajuda MUITO no iOS) -->
+<link rel="preload" href="data/loader.js" as="script">
 
 <style>
 html, body {
@@ -39,6 +28,7 @@ html, body {
   align-items: center;
   justify-content: center;
   z-index: 10;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -49,11 +39,54 @@ html, body {
 <div id="game"></div>
 
 <script>
-document.getElementById("overlay").addEventListener("click", () => {
-  // gesto do usuário (obrigatório no Android)
-  document.getElementById("overlay").remove();
+/* =========================
+   DETECÇÃO DE DISPOSITIVO
+========================= */
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // fullscreen só após toque
+/* =========================
+   CONFIG EMULATORJS
+========================= */
+EJS_player = "#game";
+EJS_core = "snes"; // SNES9x
+EJS_gameUrl = "roms/tg.sfc";
+EJS_pathtodata = "data/";
+
+/* 🔥 CRÍTICO PARA iOS */
+EJS_threads = false;
+
+/* estabilidade */
+EJS_disableDebug = true;
+EJS_startOnLoaded = false; // vamos iniciar manualmente
+EJS_fullscreenOnLoaded = false;
+
+/* fallback iOS (opcional, melhora estabilidade) */
+if (isIOS) {
+  console.log("Modo iOS ativado");
+  EJS_threads = false;
+}
+
+/* =========================
+   INICIAR APÓS TOQUE
+========================= */
+document.getElementById("overlay").addEventListener("click", () => {
+  const overlay = document.getElementById("overlay");
+  overlay.remove();
+
+  // carregar script somente após interação (melhor p/ iOS)
+  const script = document.createElement("script");
+  script.src = "data/loader.js";
+
+  script.onload = () => {
+    // iniciar emulador manualmente
+    if (window.EJS_start) {
+      EJS_start();
+    }
+  };
+
+  document.body.appendChild(script);
+
+  // fullscreen (se suportado)
   document.documentElement.requestFullscreen?.();
 });
 </script>
