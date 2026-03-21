@@ -4,8 +4,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Top Gear</title>
 
-<!-- PRELOAD (ajuda MUITO no iOS) -->
-<link rel="preload" href="data/loader.js" as="script">
+<!-- FIX iOS viewport -->
+<script>
+function setVH() {
+  let vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+setVH();
+window.addEventListener('resize', setVH);
+window.addEventListener('orientationchange', setVH);
+</script>
 
 <style>
 html, body {
@@ -13,11 +21,15 @@ html, body {
   background: black;
   height: 100%;
   overflow: hidden;
+  touch-action: manipulation;
 }
+
 #game {
   width: 100vw;
-  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  position: relative;
 }
+
 #overlay {
   position: fixed;
   inset: 0;
@@ -30,6 +42,17 @@ html, body {
   z-index: 10;
   cursor: pointer;
 }
+
+/* Corrige layout interno do EmulatorJS */
+.ejs--container {
+  height: 100% !important;
+}
+
+#game canvas {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+}
 </style>
 </head>
 
@@ -40,7 +63,7 @@ html, body {
 
 <script>
 /* =========================
-   DETECÇÃO DE DISPOSITIVO
+   DETECÇÃO iOS
 ========================= */
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -48,37 +71,36 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
    CONFIG EMULATORJS
 ========================= */
 EJS_player = "#game";
-EJS_core = "snes"; // SNES9x
+EJS_core = "snes";
 EJS_gameUrl = "roms/tg.sfc";
 EJS_pathtodata = "data/";
 
-/* 🔥 CRÍTICO PARA iOS */
-EJS_threads = false;
-
-/* estabilidade */
+EJS_threads = false; // CRÍTICO para iOS
 EJS_disableDebug = true;
-EJS_startOnLoaded = false; // vamos iniciar manualmente
+EJS_startOnLoaded = false;
 EJS_fullscreenOnLoaded = false;
 
-/* fallback iOS (opcional, melhora estabilidade) */
+/* remove botão bugado interno */
+EJS_hidePlayButton = true;
+
+/* fallback iOS */
 if (isIOS) {
   console.log("Modo iOS ativado");
   EJS_threads = false;
 }
 
 /* =========================
-   INICIAR APÓS TOQUE
+   INICIAR AO TOQUE
 ========================= */
 document.getElementById("overlay").addEventListener("click", () => {
   const overlay = document.getElementById("overlay");
   overlay.remove();
 
-  // carregar script somente após interação (melhor p/ iOS)
+  // carregar emulator somente após interação
   const script = document.createElement("script");
   script.src = "data/loader.js";
 
   script.onload = () => {
-    // iniciar emulador manualmente
     if (window.EJS_start) {
       EJS_start();
     }
@@ -86,7 +108,7 @@ document.getElementById("overlay").addEventListener("click", () => {
 
   document.body.appendChild(script);
 
-  // fullscreen (se suportado)
+  // fullscreen
   document.documentElement.requestFullscreen?.();
 });
 </script>
